@@ -1,3 +1,17 @@
+/*
+for talking to dc/dc
+
+AT H1           -enable display of reply headers
+AT PP 2C SV 60  -sets (SV) extended message headers (60) on for protocol B (2C)
+AT PP 2C ON     -activates modified settings
+AT CP 0C        -sets first byte of extended address header
+AT SH 70 82 01  -sets remainder of extended address header
+01              -message
+*/
+
+
+
+
 #include <math.h>
 #include <NewSoftSerial.h>
 
@@ -11,36 +25,6 @@
 #define rxPin 3
 #define txPin 4
 
-int tempSensorPin1 = 0;
-int tempSensorPin2 = 1;
-int FLwheelPin = 8;
-
-//Messages to print on LCD
-char vSpeed[10];
-char temperature1[20];
-char temperature2[20];
-char voltage[16];
-char stateOfCharge[16];
-char minVolts1[16];
-char minVolts2[16];
-
-//constants for printing on LCD
-char k[] = "km/h";
-char tmp1[] = "C eng";
-char tmp2[] = "C mot";
-char v[] = "vlt";
-char s[] = "soc";
-char mv[] = "mV";
-
-
-//for speed calculation
-double freq;
-double time;
-double totalTime;
-double circumference = 1.61;  //tire circumference in meters
-int vehicleSpeed;
-unsigned long t1;
-unsigned long t2;
 int y;
 
 //software serial for ELM module; CompactRIO uses hard serial
@@ -180,6 +164,7 @@ void loop()
 }
 
 
+/*
 //gets short info from the BMS.  This includes the battery voltage and state of charge.
 void get_shortInfo()
 {
@@ -228,8 +213,9 @@ void get_shortInfo()
     strcpy(stateOfCharge, "err");
   }
 }
+*/
 
-
+/*
 //Get the minimum cell voltage from each slave
 void getMinVolts()
 {
@@ -283,6 +269,7 @@ void getMinVolts()
     strcpy(minVolts1, "err");
   }
 }
+*/
 
 
 //Gets the BMS's software version
