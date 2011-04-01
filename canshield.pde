@@ -1,4 +1,8 @@
 /*
+****** NOTE ******
+When communicating with the Arduino over serial, be sure that carriage returns are selected
+
+
 for talking to dc/dc
 
 AT H1           -enable display of reply headers
@@ -7,6 +11,13 @@ AT PP 2C ON     -activates modified settings
 AT CP 0C        -sets first byte of extended address header
 AT SH 70 82 01  -sets remainder of extended address header
 01              -message
+
+to listen to dc/dc broadcast
+
+AT CRA 0C 7F 81 82   -listen to messages at address 0C 7F 81 82
+// wait for at least .1s as this is the frequency of broadcast
+// after message received:
+AT AR                -return to mode that automatically sets receive address
 */
 
 
