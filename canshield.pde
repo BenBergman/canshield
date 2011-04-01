@@ -26,7 +26,7 @@ AT AR                -return to mode that automatically sets receive address
 #include <math.h>
 #include <NewSoftSerial.h>
 
-#define SIZE 50
+#define SIZE 44
 #define NUL '\0'
 #define PROMPT '>'
 #define RETURN '\r'
@@ -139,6 +139,22 @@ void loop()
     str[i++] = NUL;
     // forward the character:
     Serial.println(str);
+    
+    //FOR TESTING
+    //delay(300);
+    //ELMserial.flush();
+    //Serial.println(i, DEC);
+    /*
+    str[0]='a';
+    str[1]=RETURN;
+    str[2]=NUL;
+    if (i >= SIZE) {
+      delay(300);
+      ELMserial.flush();
+      ELMserial.print(str);
+      ELMserial.flush();
+    }
+    */
   } 
   delay(100);
 
