@@ -32,17 +32,7 @@ AT AR                -return to mode that automatically sets receive address
 #define RETURN '\r'
 #define speedTimeout 75
 
-//ELMserial pins
-#define rxPin 3
-#define txPin 4
-
 int y;
-
-//software serial for ELM module; CompactRIO uses hard serial
-NewSoftSerial ELMserial(rxPin, txPin);
-
-
-
 
 
 void setup()
@@ -53,8 +43,8 @@ void setup()
   Serial.begin(9600);
   Serial.flush();
 
-  ELMserial.begin(9600);
-  ELMserial.flush();
+  Serial1.begin(9600);
+  Serial1.flush();
 
 
   //Restart ELM
@@ -85,6 +75,7 @@ void setup()
 
   //wakeup();
 
+  Serial.println("Starting main loop");
 
 }
 
@@ -118,7 +109,7 @@ void loop()
     // forward the command:
     //Serial.print("Sending to ELM: ");
     //Serial.println(str);
-    ELMserial.print(str);
+    Serial1.print(str);
   }
   delay(100);
 
@@ -129,8 +120,8 @@ void loop()
   str[0] = NUL;
 
   //Serial.println("\nCAN to Serial");
-  if (ELMserial.available()) {
-    while( (b=ELMserial.read()) != PROMPT && b != -1 && i<SIZE) {
+  if (Serial1.available()) {
+    while( (b=Serial1.read()) != PROMPT && b != -1 && i<SIZE) {
       if(b>=' ')
         str[i++] = b;
     }
@@ -330,8 +321,8 @@ void wakeup()
 //sends a CAN command
 int send_command(char *cmd, char *result)
 {
-  ELMserial.flush(); 
-  ELMserial.print(cmd);
+  Serial1.flush(); 
+  Serial1.print(cmd);
   return read_data(result);
 }
 
@@ -343,10 +334,10 @@ int read_data(char *str)
   byte i=0;
 
   //Only read if something is available to read
-  if(ELMserial.available() > 0)
+  if(Serial1.available() > 0)
   {
     // wait for something on com port
-    while((b=ELMserial.read())!=PROMPT && i<SIZE)
+    while((b=Serial1.read())!=PROMPT && i<SIZE)
     {
       if(b>=' ')
         str[i++]=b;
