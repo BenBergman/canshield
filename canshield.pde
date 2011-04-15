@@ -24,7 +24,6 @@ AT AR                -return to mode that automatically sets receive address
 
 
 #include <math.h>
-#include <NewSoftSerial.h>
 
 #define SIZE 44
 #define NUL '\0'
@@ -34,12 +33,13 @@ AT AR                -return to mode that automatically sets receive address
 
 int y;
 
+char str[SIZE];
+
+unsigned int state = 0;
+
 
 void setup()
 {
-
-  char str[SIZE];
-
   Serial.begin(9600);
   Serial.flush();
 
@@ -91,12 +91,32 @@ void stripAddress(char *str)
 
 void loop()
 {
+  /************* Main loop code flow *************
+   * 
+   * Enter loop and update analog outputs
+   * - BMS - send CAN message to request this info
+   *   - max cell V
+   *   - min cell V
+   *   - SOC
+   * - DC/DC - use "AT MA" to monitor broadcasts
+   *   - generator Vin
+   *   - DC/DC Vout
+   *   - DC/DC Iout
+   *
+   * Check state in FSM and act accordingly 
+   *
+   ***********************************************/
+
+
+
+
   char str[SIZE];
   str[0] = NUL;
   int b;
   byte i = 0;
 
 
+  /* This was the section for forwarding messages from USB to the ELM for testing
   //Serial.println("\nSerial to CAN");
   if (Serial.available() > 0) {
     while( (b=Serial.read()) != RETURN && i<SIZE) {
@@ -112,6 +132,7 @@ void loop()
     Serial1.print(str);
   }
   delay(100);
+  */
 
 
 
@@ -133,7 +154,7 @@ void loop()
     
     //FOR TESTING
     //delay(300);
-    //ELMserial.flush();
+    //Serial1.flush();
     //Serial.println(i, DEC);
     /*
     str[0]='a';
@@ -141,9 +162,9 @@ void loop()
     str[2]=NUL;
     if (i >= SIZE) {
       delay(300);
-      ELMserial.flush();
-      ELMserial.print(str);
-      ELMserial.flush();
+      Serial1.flush();
+      Serial1.print(str);
+      Serial1.flush();
     }
     */
   } 
@@ -163,8 +184,8 @@ void loop()
   if(str1 != 0) {
     Serial.print("Sending message to ELM:");
     Serial.println(str1);
-    ELMserial.flush();
-    ELMserial.print(str1);
+    Serial1.flush();
+    Serial1.print(str1);
   }
 
   delay(1000);
