@@ -6,25 +6,33 @@ When communicating with the Arduino over serial, be sure that carriage returns a
 for talking to dc/dc
 
 AT H1           -enable display of reply headers
+AT D1           -enable display of DLC (message length) - only 4 bits
 AT PP 2C SV 60  -sets (SV) extended message headers (60) on for protocol B (2C)
 AT PP 2C ON     -activates modified settings
 AT CP 0C        -sets first byte of extended address header
-AT SH 70 82 01  -sets remainder of extended address header
-01              -message
+AT SH 7F 82 81  -sets remainder of extended address header
+FF 37           -message (turn on DC/DC to PoutSetPoint of 5.5 kW)
 
 to listen to dc/dc broadcast
+AT MA     -this will spit out about 5 CAN messages
+            -filter out the first one (verify not followed by <RX ERROR)
+* Example output (DC/DC was disconnected but turned on)
+  0C 5F 81 82 7 FF FF FD FE 24 07 00
+  ^-header--^ | ^-----message------^
+              '-DLC
 
+*** does not work ***
 AT CRA 0C 7F 81 82   -listen to messages at address 0C 7F 81 82
 // wait for at least .1s as this is the frequency of broadcast
 // after message received:
 AT AR                -return to mode that automatically sets receive address
+*********************
 */
 
 
 
 
 #include <math.h>
-#include <NewSoftSerial.h>
 
 #define SIZE 44
 #define NUL '\0'
