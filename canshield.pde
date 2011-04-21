@@ -434,3 +434,9 @@ void substring(char *in, char *out, int begin, int end)
   }
   out[end-begin+1] = NUL;
 }
+
+void getBMS()
+{
+  // read BMS values and adjust analog outputs
+  
+}
