@@ -43,8 +43,8 @@ void setup()
   Serial.begin(9600);
   Serial.flush();
 
-  Serial1.begin(9600);
-  Serial1.flush();
+  Serial2.begin(9600);
+  Serial2.flush();
 
 
   //Restart ELM
@@ -129,7 +129,7 @@ void loop()
     // forward the command:
     //Serial.print("Sending to ELM: ");
     //Serial.println(str);
-    Serial1.print(str);
+    Serial2.print(str);
   }
   delay(100);
   */
@@ -141,8 +141,8 @@ void loop()
   str[0] = NUL;
 
   //Serial.println("\nCAN to Serial");
-  if (Serial1.available()) {
-    while( (b=Serial1.read()) != PROMPT && b != -1 && i<SIZE) {
+  if (Serial2.available()) {
+    while( (b=Serial2.read()) != PROMPT && b != -1 && i<SIZE) {
       if(b>=' ')
         str[i++] = b;
     }
@@ -154,7 +154,7 @@ void loop()
     
     //FOR TESTING
     //delay(300);
-    //Serial1.flush();
+    //Serial2.flush();
     //Serial.println(i, DEC);
     /*
     str[0]='a';
@@ -162,9 +162,9 @@ void loop()
     str[2]=NUL;
     if (i >= SIZE) {
       delay(300);
-      Serial1.flush();
-      Serial1.print(str);
-      Serial1.flush();
+      Serial2.flush();
+      Serial2.print(str);
+      Serial2.flush();
     }
     */
   } 
@@ -184,8 +184,8 @@ void loop()
   if(str1 != 0) {
     Serial.print("Sending message to ELM:");
     Serial.println(str1);
-    Serial1.flush();
-    Serial1.print(str1);
+    Serial2.flush();
+    Serial2.print(str1);
   }
 
   delay(1000);
@@ -342,8 +342,8 @@ void wakeup()
 //sends a CAN command
 int send_command(char *cmd, char *result)
 {
-  Serial1.flush(); 
-  Serial1.print(cmd);
+  Serial2.flush(); 
+  Serial2.print(cmd);
   return read_data(result);
 }
 
@@ -355,10 +355,10 @@ int read_data(char *str)
   byte i=0;
 
   //Only read if something is available to read
-  if(Serial1.available() > 0)
+  if(Serial2.available() > 0)
   {
     // wait for something on com port
-    while((b=Serial1.read())!=PROMPT && i<SIZE)
+    while((b=Serial2.read())!=PROMPT && i<SIZE)
     {
       if(b>=' ')
         str[i++]=b;
