@@ -48,7 +48,7 @@ void setup()
 
   char str[SIZE];
 
-  Serial.begin(9600);
+  Serial.begin(115200);
   Serial.flush();
 
   Serial2.begin(9600);
