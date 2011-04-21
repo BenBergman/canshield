@@ -40,7 +40,7 @@ unsigned int state = 0;
 
 void setup()
 {
-  Serial.begin(9600);
+  Serial.begin(115200);
   Serial.flush();
 
   Serial2.begin(9600);
@@ -74,6 +74,18 @@ void setup()
   send_command("AT SP B\r", str);   
 
   //wakeup();
+
+  
+
+  send_command("AT H1\r", str);           // -enable display of reply headers
+  send_command("AT D1\r", str);           // -enable display of DLC (message length) - only 4 bits
+  send_command("AT PP 2C SV 60\r", str);  // -sets (SV) extended message headers (60) on for protocol B (2C)
+  send_command("AT PP 2C ON\r", str);     // -activates modified settings
+  send_command("AT CP 0C\r", str);        // -sets first byte of extended address header
+  send_command("AT SH 7F 82 81\r", str);  // -sets remainder of extended address header
+  send_command("FF 37\r", str);           // -message (turn on DC/DC to PoutSetPoint of 5.5 kW)
+
+
 
   Serial.println("Starting main loop");
 
@@ -134,7 +146,12 @@ void loop()
   delay(100);
   */
 
+  char fake[SIZE];
 
+  send_command("AT SH 100\r", fake);
+  send_command("07\r", fake);
+
+  delay(500); // just make sure reply is recieved
 
 
   i = 0;
@@ -170,7 +187,7 @@ void loop()
   } 
   delay(100);
 
-
+while(1);
 
   /*
   char str1[SIZE];
