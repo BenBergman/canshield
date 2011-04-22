@@ -10,9 +10,11 @@ AT D1           -enable display of DLC (message length) - only 4 bits
 AT PP 2C SV 60  -sets (SV) extended message headers (60) on for protocol B (2C)
 AT PP 2C ON     -activates modified settings
 AT CP 0C        -sets first byte of extended address header
-AT SH 7F 82 81  -sets remainder of extended address header
+AT SH 20 82 20  -sets remainder of extended address header (address for requesting data)
+AT CRA 0C 50 02 82 - listens for replies sent to 0C 50 02 82 (data)
 FF 37           -message (turn on DC/DC to PoutSetPoint of 5.5 kW)
 
+*** old method ***
 to listen to dc/dc broadcast
 AT MA     -this will spit out about 5 CAN messages
             -filter out the first one (verify not followed by <RX ERROR)
@@ -20,6 +22,7 @@ AT MA     -this will spit out about 5 CAN messages
   0C 5F 81 82 7 FF FF FD FE 24 07 00
   ^-header--^ | ^-----message------^
               '-DLC
+******************
 
 *** does not work ***
 AT CRA 0C 7F 81 82   -listen to messages at address 0C 7F 81 82
@@ -34,7 +37,7 @@ AT AR                -return to mode that automatically sets receive address
 
 #include <math.h>
 
-#define SIZE 44
+#define SIZE 300
 #define NUL '\0'
 #define PROMPT '>'
 #define RETURN '\r'
