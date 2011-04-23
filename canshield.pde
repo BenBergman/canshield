@@ -372,7 +372,7 @@ int send_command(char *cmd, char *result)
 {
   Serial2.flush(); 
   Serial2.print(cmd);
-  return read_data(result);
+  return 1;//read_data(result);
 }
 
 
@@ -491,5 +491,12 @@ void getBMS()
   // read BMS values and adjust analog outputs
   char temp[SIZE];
   send_command("AT PP 2C SV C0\r", temp);
+  send_command("AT PP 2C ON\r", temp);
+  send_command("AT D\r", temp);
+  delay(10);
+  send_command("AT CRA 101\r", temp);
+  send_command("AT SH 100\r", temp);
+  send_command("02\r", temp); // requests Batt V (4 bytes) and SOC (2 bytes)
+
   
 }
