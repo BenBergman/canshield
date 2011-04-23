@@ -60,8 +60,19 @@ void setup()
 
   //increase timeout time
   send_command("AT PP 03 SV A0\r", str);
-
   send_command("AT PP 03 ON\r", str);
+
+  //Set echo default off
+  send_command("AT PP 09 SV FF\r", str);
+  send_command("AT PP 09 ON\r", str);
+
+  //Set header printing default off
+  send_command("AT PP 01 SV FF\r", str);
+  send_command("AT PP 09 ON\r", str);
+
+  //Set DLC printing default off
+  send_command("AT PP 29 SV FF\r", str);
+  send_command("AT PP 09 ON\r", str);
 
   //Restart the ELM
   send_command("AT WS\r", str);
@@ -77,13 +88,13 @@ void setup()
 
   
 
-  send_command("AT H1\r", str);           // -enable display of reply headers
-  send_command("AT D1\r", str);           // -enable display of DLC (message length) - only 4 bits
-  send_command("AT PP 2C SV 60\r", str);  // -sets (SV) extended message headers (60) on for protocol B (2C)
-  send_command("AT PP 2C ON\r", str);     // -activates modified settings
-  send_command("AT CP 0C\r", str);        // -sets first byte of extended address header
-  send_command("AT SH 7F 82 81\r", str);  // -sets remainder of extended address header
-  send_command("FF 37\r", str);           // -message (turn on DC/DC to PoutSetPoint of 5.5 kW)
+  //send_command("AT H1\r", str);           // -enable display of reply headers
+  //send_command("AT D1\r", str);           // -enable display of DLC (message length) - only 4 bits
+  //send_command("AT PP 2C SV 60\r", str);  // -sets (SV) extended message headers (60) on for protocol B (2C)
+  //send_command("AT PP 2C ON\r", str);     // -activates modified settings
+  //send_command("AT CP 0C\r", str);        // -sets first byte of extended address header
+  //send_command("AT SH 7F 82 81\r", str);  // -sets remainder of extended address header
+  //send_command("FF 37\r", str);           // -message (turn on DC/DC to PoutSetPoint of 5.5 kW)
 
 
 
@@ -402,8 +413,8 @@ int read_data(char *str)
 //sends a CAN command
 int serial_send_command(char *cmd, char *result)
 {
-  Serial.flush(); 
-  Serial.println(cmd);
+  Serial2.flush(); 
+  Serial2.println(cmd);
   return read_data(result);
 }
 
@@ -415,10 +426,10 @@ int serial_read_data(char *str)
   byte i=0;
 
   //Only read if something is available to read
-  if(Serial.available() > 0)
+  if(Serial2.available() > 0)
   {
     // wait for something on com port
-    while((b=Serial.read())!=RETURN && i<SIZE)
+    while((b=Serial2.read())!=RETURN && i<SIZE)
     {
       if(b>=' ')
         str[i++]=b;
@@ -452,8 +463,33 @@ void substring(char *in, char *out, int begin, int end)
   out[end-begin+1] = NUL;
 }
 
+// Converts ASCII hex to int value
+// Requires string without white space
+unsigned int hexToInt(char *in, int length)
+{
+  unsigned int result = 0;
+  for(int i = 0; i < length; i++)
+  {
+    if (in[i] >= '0' && in[i] <= '9')
+    {
+      result += ((in[i] - '0') * pow(16, (length-i-1)) + 0.5);
+    }
+    else if (in[i] >= 'a' && in[i] <= 'z')
+    {
+      result += ((in[i] - 'a') * pow(16, (length-i-1))) + 0.5;
+    }
+    else if (in[i] >= 'A' && in[i] <= 'Z')
+    {
+      result += ((in[i] - 'A' + 10) * pow(16, (length-i-1))) + 0.5;
+    }
+  }
+  return result;
+}
+
 void getBMS()
 {
   // read BMS values and adjust analog outputs
+  char temp[SIZE];
+  send_command("AT PP 2C SV C0\r", temp);
   
 }
