@@ -120,7 +120,10 @@ void loop()
     // forward the command:
     //Serial.print("Sending to ELM: ");
     //Serial.println(str);
-    Serial2.print(str);
+
+    //Serial2.print(str);
+    char temp[SIZE];
+    send_command(str, temp);
   }
   delay(100);
 
@@ -375,8 +378,8 @@ int read_data(char *str)
 //sends a CAN command
 int serial_send_command(char *cmd, char *result)
 {
-  Serial.flush(); 
-  Serial.println(cmd);
+  Serial2.flush(); 
+  Serial2.println(cmd);
   return read_data(result);
 }
 
@@ -388,10 +391,10 @@ int serial_read_data(char *str)
   byte i=0;
 
   //Only read if something is available to read
-  if(Serial.available() > 0)
+  if(Serial2.available() > 0)
   {
     // wait for something on com port
-    while((b=Serial.read())!=RETURN && i<SIZE)
+    while((b=Serial2.read())!=RETURN && i<SIZE)
     {
       if(b>=' ')
         str[i++]=b;
