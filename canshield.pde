@@ -370,7 +370,7 @@ void wakeup()
 //sends a CAN command
 int send_command(char *cmd, char *result)
 {
-  Serial2.flush(); 
+  //Serial2.flush(); 
   Serial2.print(cmd);
   return 1;//read_data(result);
 }
@@ -393,49 +393,6 @@ int read_data(char *str)
     }
 
     if(b == PROMPT)  // we got a prompt
-    {
-      str[i]=NUL;
-      return 1;
-    }
-    else
-    {  
-      //Message larger than size, or did not receive prompt
-      return 0;
-    }
-  }
-  else
-  {
-    return 0;
-  }
-}
-
-
-//sends a CAN command
-int serial_send_command(char *cmd, char *result)
-{
-  Serial2.flush(); 
-  Serial2.println(cmd);
-  return read_data(result);
-}
-
-
-//Reads data from the serial port.  Returns 1 if data is as expected, or 0 if the data does not end with a prompt or nothing was received
-int serial_read_data(char *str)
-{
-  int b;
-  byte i=0;
-
-  //Only read if something is available to read
-  if(Serial2.available() > 0)
-  {
-    // wait for something on com port
-    while((b=Serial2.read())!=RETURN && i<SIZE)
-    {
-      if(b>=' ')
-        str[i++]=b;
-    }
-
-    if(b == RETURN)  // we got a command
     {
       str[i]=NUL;
       return 1;
@@ -492,8 +449,8 @@ void getBMS()
   char temp[SIZE];
   send_command("AT PP 2C SV C0\r", temp);
   send_command("AT PP 2C ON\r", temp);
-  send_command("AT D\r", temp);
-  delay(10);
+  send_command("AT WS\r", temp);
+  delay(120);
   send_command("AT CRA 101\r", temp);
   send_command("AT SH 100\r", temp);
   send_command("02\r", temp); // requests Batt V (4 bytes) and SOC (2 bytes)
