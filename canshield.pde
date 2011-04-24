@@ -43,9 +43,11 @@ const int DAQ_REQUEST_MIN_MAX = 4;
 const int DAQ_MIN_MAX_WAIT = 5;
 const int DAQ_PARSE_MIN_MAX = 6;
 const int DAQ_REQUEST_DCDC = 7;
+const int DAQ_DCDC_WAIT = 8;
+const int DAQ_PARSE_DCDC = 9;
 /****************************************************/
 
-const unsigned long DAQtimeout = 500;
+const unsigned long DAQtimeout = 100;
 unsigned long DAQtimer;
 
 int y;
@@ -151,16 +153,21 @@ void loop()
    *
    ***********************************************/
 
+  /**/
   switch (DAQstate)
   {
     // might want to avoid receiving data when the motor controller is using the can bus
     // perhaps backtrack if the state is XXXX or pause if it is WWWW
+
+
 
     case DAQ_START:
       Serial.println("DAQ_START");
 
       DAQstate = DAQ_REQUEST_SOC;
       break;
+
+
 
     case DAQ_REQUEST_SOC:
       Serial.println("DAQ_REQUEST_SOC");
@@ -172,6 +179,8 @@ void loop()
 
       DAQstate = DAQ_SOC_WAIT;
       break;
+
+
 
     case DAQ_SOC_WAIT:
       Serial.println("DAQ_SOC_WAIT");
@@ -193,6 +202,8 @@ void loop()
       
       break;
 
+
+
     case DAQ_PARSE_SOC:
       Serial.println("DAQ_PARSE_SOC");
       
@@ -209,15 +220,20 @@ void loop()
       DAQstate = DAQ_REQUEST_MIN_MAX;
       break;
 
+
+
     case DAQ_REQUEST_MIN_MAX:
       Serial.println("DAQ_REQUEST_MIN_MAX");
 
+      getBMS();
       requestBMSMinMax();
 
       DAQtimer = millis();
 
       DAQstate = DAQ_MIN_MAX_WAIT;
       break;
+
+
 
     case DAQ_MIN_MAX_WAIT:
       Serial.println("DAQ_MIN_MAX_WAIT");
@@ -239,6 +255,8 @@ void loop()
 
       break;
 
+
+
     case DAQ_PARSE_MIN_MAX:
       Serial.println("DAQ_PARSE_MIN_MAX");
 
@@ -255,23 +273,81 @@ void loop()
       DAQstate = DAQ_REQUEST_DCDC;
       break;
 
+
+
+    case DAQ_REQUEST_DCDC:
+      Serial.println("DAQ_REQUEST_DCDC");
+
+      getDCDC();
+      requestDCDCData();
+
+      DAQtimer = millis();
+
+      DAQstate = DAQ_DCDC_WAIT;
+      break;
+
+
+
+    case DAQ_DCDC_WAIT:
+      Serial.println("DAQ_DCDC_WAIT");
+
+      // might want to add an attempts thing so that it can make at least two attempts or something.
+
+      if ((millis() - DAQtimer) > DAQtimeout)
+      {
+        Serial.println("> Timeout");
+        DAQstate = DAQ_REQUEST_SOC;
+      }
+      else if (Serial2.available())
+      {
+        Serial.println("> readData");
+        readData(data);
+        DAQstate = DAQ_PARSE_DCDC;
+      }
+      // otherwise, stay in this state and try again later
+
+      break;
+
+
+
+    case DAQ_PARSE_DCDC:
+      Serial.println("DAQ_PARSE_DCDC");
+
+      Serial.print("> ");
+      Serial.println(data);
+
+      if (strncmp(data, "0C 50 01 82", 11) == 0)
+      {
+        // parse the reply
+        Serial.println("> Proper DC/DC reply");
+      }
+      else Serial.println("> Not proper DC/DC reply");
+
+      DAQstate = DAQ_REQUEST_SOC;
+      break;
+
+
       
     default:
       DAQstate = DAQ_START;
       break;
   }
 
+  /**/
 
 
 
   /*
-  Serial.println("Requesting BMS SOC...");
+  Serial.println("Requesting BMS min/max...");
 
-  requestBMSSOC();
+  requestBMSMinMax();
+  unsigned long testtimer = millis();
 
   Serial.println("Receiving response...");
   while(!Serial2.available());
-  readData();
+  Serial.print("Delay: ");
+  Serial.println(millis() - testtimer);
+  readData(data);
 
   delay(2000);
   /**/
@@ -603,6 +679,7 @@ void getBMS()
 void requestBMSSOC()
 {
   // send CAN request for SOC
+  // THIS FUNCTION VERIFIED
   send_command("AT CRA 101\r", temp);
   send_command("AT SH 100\r", temp);
   Serial2.flush();
@@ -612,6 +689,7 @@ void requestBMSSOC()
 void requestBMSMinMax()
 {
   // send CAN request for min and max cell V
+  // THIS FUNCTION VERIFIED
   send_command("AT CRA 103\r", temp);
   send_command("AT SH 102\r", temp);
   Serial2.flush();
@@ -631,7 +709,7 @@ void getDCDC()
 void requestDCDCData()
 {
   // send CAN request for min and max cell V
-  send_command("AT CRA 50 02 82\r", temp);
+  send_command("AT CRA 50 01 82\r", temp);
   send_command("AT CP 0C\r", temp);
   send_command("AT SH 20 82 20\r", temp);
   Serial2.flush();
