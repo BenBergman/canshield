@@ -24,16 +24,35 @@ AT AR                -return to mode that automatically sets receive address
 
 
 #include <math.h>
+#include <string.h>
 
-#define SIZE 44
+#define SIZE 100
 #define NUL '\0'
 #define PROMPT '>'
 #define RETURN '\r'
 #define speedTimeout 75
 
+
+/************* Data acquisition states **************/
+int DAQstate;
+const int DAQ_START = 0;
+const int DAQ_REQUEST_SOC = 1;
+const int DAQ_SOC_WAIT = 2;
+const int DAQ_PARSE_SOC = 3;
+const int DAQ_REQUEST_MIN_MAX = 4;
+const int DAQ_MIN_MAX_WAIT = 5;
+const int DAQ_PARSE_MIN_MAX = 6;
+const int DAQ_REQUEST_DCDC = 7;
+/****************************************************/
+
+const unsigned long DAQtimeout = 500;
+unsigned long DAQtimer;
+
 int y;
 
 char str[SIZE];
+char data[SIZE]; // received data gets stored here until parsed
+char temp[SIZE]; // temp data is NEVER considered valid; just used to appease methods
 
 unsigned int state = 0;
 
@@ -46,11 +65,12 @@ void setup()
   Serial2.begin(9600);
   Serial2.flush();
 
+  DAQstate = DAQ_START;
 
   //Restart ELM
   send_command("AT WS\r", str);
 
-  delay(1000);
+  delay(100);
 
   //BCS requires 250kbaud.  Set baud rate divisor in PP 2D to 02.  Baud rate = 500/[02]
   send_command("AT PP 2D SV 02\r", str);
@@ -66,17 +86,17 @@ void setup()
   send_command("AT PP 09 SV FF\r", str);
   send_command("AT PP 09 ON\r", str);
 
-  //Set header printing default off
-  send_command("AT PP 01 SV FF\r", str);
-  send_command("AT PP 09 ON\r", str);
+  //Set header printing default on
+  send_command("AT PP 01 SV 00\r", str);
+  send_command("AT PP 01 ON\r", str);
 
   //Set DLC printing default off
   send_command("AT PP 29 SV FF\r", str);
-  send_command("AT PP 09 ON\r", str);
+  send_command("AT PP 29 ON\r", str);
 
   //Restart the ELM
   send_command("AT WS\r", str);
-  delay(2500);
+  delay(100);
 
   //Turn echo off
   send_command("AT E0\r", str);  
@@ -96,6 +116,7 @@ void setup()
   //send_command("AT SH 7F 82 81\r", str);  // -sets remainder of extended address header
   //send_command("FF 37\r", str);           // -message (turn on DC/DC to PoutSetPoint of 5.5 kW)
 
+  getBMS();
 
 
   Serial.println("Starting main loop");
@@ -126,18 +147,150 @@ void loop()
    *   - DC/DC Vout
    *   - DC/DC Iout
    *
-   * Check state in FSM and act accordingly 
+   * Check state in motor control FSM and act accordingly 
    *
    ***********************************************/
 
+  switch (DAQstate)
+  {
+    // might want to avoid receiving data when the motor controller is using the can bus
+    // perhaps backtrack if the state is XXXX or pause if it is WWWW
+
+    case DAQ_START:
+      Serial.println("DAQ_START");
+
+      DAQstate = DAQ_REQUEST_SOC;
+      break;
+
+    case DAQ_REQUEST_SOC:
+      Serial.println("DAQ_REQUEST_SOC");
+
+      getBMS();
+      requestBMSSOC();
+
+      DAQtimer = millis();
+
+      DAQstate = DAQ_SOC_WAIT;
+      break;
+
+    case DAQ_SOC_WAIT:
+      Serial.println("DAQ_SOC_WAIT");
+
+      // might want to add an attempts thing so that it can make at least two attempts or something.
+
+      if ((millis() - DAQtimer) > DAQtimeout)
+      {
+        Serial.println("> Timeout");
+        DAQstate = DAQ_REQUEST_MIN_MAX;
+      }
+      else if (Serial2.available())
+      {
+        Serial.println("> readData");
+        readData(data);
+        DAQstate = DAQ_PARSE_SOC;
+      }
+      // otherwise, stay in this state and try again later
+      
+      break;
+
+    case DAQ_PARSE_SOC:
+      Serial.println("DAQ_PARSE_SOC");
+      
+      Serial.print("> ");
+      Serial.println(data);
+
+      if (strncmp(data, "101 02", 6) == 0)
+      {
+        // parse the reply
+        Serial.println("> Proper SOC reply");
+      }
+      else Serial.println("> Not proper SOC reply");
+
+      DAQstate = DAQ_REQUEST_MIN_MAX;
+      break;
+
+    case DAQ_REQUEST_MIN_MAX:
+      Serial.println("DAQ_REQUEST_MIN_MAX");
+
+      requestBMSMinMax();
+
+      DAQtimer = millis();
+
+      DAQstate = DAQ_MIN_MAX_WAIT;
+      break;
+
+    case DAQ_MIN_MAX_WAIT:
+      Serial.println("DAQ_MIN_MAX_WAIT");
+
+      // might want to add an attempts thing so that it can make at least two attempts or something.
+
+      if ((millis() - DAQtimer) > DAQtimeout)
+      {
+        Serial.println("> Timeout");
+        DAQstate = DAQ_REQUEST_DCDC;
+      }
+      else if (Serial2.available())
+      {
+        Serial.println("> readData");
+        readData(data);
+        DAQstate = DAQ_PARSE_MIN_MAX;
+      }
+      // otherwise, stay in this state and try again later
+
+      break;
+
+    case DAQ_PARSE_MIN_MAX:
+      Serial.println("DAQ_PARSE_MIN_MAX");
+
+      Serial.print("> ");
+      Serial.println(data);
+
+      if (strncmp(data, "103 18", 6) == 0)
+      {
+        // parse the reply
+        Serial.println("> Proper Min Max reply");
+      }
+      else Serial.println("> Not proper Min Max reply");
+
+      DAQstate = DAQ_REQUEST_DCDC;
+      break;
+
+      
+    default:
+      DAQstate = DAQ_START;
+      break;
+  }
 
 
 
+
+  /*
+  Serial.println("Requesting BMS SOC...");
+
+  requestBMSSOC();
+
+  Serial.println("Receiving response...");
+  while(!Serial2.available());
+  readData();
+
+  delay(2000);
+  /**/
+
+
+
+
+
+
+
+
+
+
+  /*
   char str[SIZE];
   str[0] = NUL;
   int b;
   byte i = 0;
-
+  */
 
   /* This was the section for forwarding messages from USB to the ELM for testing
   //Serial.println("\nSerial to CAN");
@@ -157,6 +310,10 @@ void loop()
   delay(100);
   */
 
+
+
+
+  /*
   char fake[SIZE];
 
   send_command("AT SH 100\r", fake);
@@ -164,10 +321,15 @@ void loop()
 
   delay(500); // just make sure reply is recieved
 
-
   i = 0;
   str[0] = NUL;
 
+  readData();
+  */
+
+
+
+  /*
   //Serial.println("\nCAN to Serial");
   if (Serial2.available()) {
     while( (b=Serial2.read()) != PROMPT && b != -1 && i<SIZE) {
@@ -179,26 +341,10 @@ void loop()
     str[i++] = NUL;
     // forward the character:
     Serial.println(str);
-    
-    //FOR TESTING
-    //delay(300);
-    //Serial2.flush();
-    //Serial.println(i, DEC);
-    /*
-    str[0]='a';
-    str[1]=RETURN;
-    str[2]=NUL;
-    if (i >= SIZE) {
-      delay(300);
-      Serial2.flush();
-      Serial2.print(str);
-      Serial2.flush();
-    }
-    */
   } 
   delay(100);
+  /**/
 
-while(1);
 
   /*
   char str1[SIZE];
@@ -372,6 +518,7 @@ int send_command(char *cmd, char *result)
 {
   //Serial2.flush(); 
   Serial2.print(cmd);
+  delay(15);
   return 1;//read_data(result);
 }
 
@@ -445,15 +592,70 @@ unsigned int hexToInt(char *in, int length)
 
 void getBMS()
 {
-  // read BMS values and adjust analog outputs
-  char temp[SIZE];
+  // prepare elm to use short CAN addresses
   send_command("AT PP 2C SV C0\r", temp);
   send_command("AT PP 2C ON\r", temp);
   send_command("AT WS\r", temp);
-  delay(120);
+  Serial2.flush();
+  delay(60); // takes some time to reset ELM but this might not be needed once motor control integrated
+}
+
+void requestBMSSOC()
+{
+  // send CAN request for SOC
   send_command("AT CRA 101\r", temp);
   send_command("AT SH 100\r", temp);
+  Serial2.flush();
   send_command("02\r", temp); // requests Batt V (4 bytes) and SOC (2 bytes)
+}
 
-  
+void requestBMSMinMax()
+{
+  // send CAN request for min and max cell V
+  send_command("AT CRA 103\r", temp);
+  send_command("AT SH 102\r", temp);
+  Serial2.flush();
+  send_command("18\r", temp);
+}
+
+void getDCDC()
+{
+  // prepare elm to use long CAN addresses
+  send_command("AT PP 2C SV 40\r", temp);
+  send_command("AT PP 2C ON\r", temp);
+  send_command("AT WS\r", temp);
+  Serial2.flush();
+  delay(60); // takes some time to reset ELM but this might not be needed once motor control integrated
+}
+
+void requestDCDCData()
+{
+  // send CAN request for min and max cell V
+  send_command("AT CRA 50 02 82\r", temp);
+  send_command("AT CP 0C\r", temp);
+  send_command("AT SH 20 82 20\r", temp);
+  Serial2.flush();
+  send_command("00\r", temp);
+}
+
+void readData(char* data)
+{
+  byte i = 0;
+  char str[SIZE];
+  str[0] = NUL;
+  unsigned int b;
+
+  //Serial.println("\nCAN to Serial");
+  while( (b=Serial2.read()) != PROMPT && b != -1 && i<SIZE) {
+    delay(2);
+    if(b>=' ')
+      str[i++] = b;
+  }
+  if(b==PROMPT)
+    str[i++] = b;
+  str[i++] = NUL;
+  // forward the character:
+  Serial.println(str);
+  if (str[0] != PROMPT && str[0] != NUL)
+    strncpy(data, str, SIZE -1);
 }
