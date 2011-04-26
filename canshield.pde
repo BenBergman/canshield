@@ -32,6 +32,12 @@ AT AR                -return to mode that automatically sets receive address
 #define RETURN '\r'
 #define speedTimeout 75
 
+const byte SOC_PIN = 8;
+const byte MIN_CELL_PIN = 9;
+const byte MAX_CELL_PIN = 10;
+const byte DCDC_VIN_PIN = 11;
+const byte DCDC_VOUT_PIN = 12;
+const byte DCDC_IOUT_PIN = 13;
 
 /************* Data acquisition states **************/
 int DAQstate;
@@ -55,6 +61,33 @@ int y;
 char str[SIZE];
 char data[SIZE]; // received data gets stored here until parsed
 char temp[SIZE]; // temp data is NEVER considered valid; just used to appease methods
+
+char byte1[2];
+char byte2[2];
+
+unsigned int soc;
+const unsigned int SOC_MIN = 0;
+const unsigned int SOC_MAX = 65535;
+
+unsigned int minCell;
+const unsigned int MIN_CELL_MIN = 0;
+const unsigned int MIN_CELL_MAX = 65535;
+
+unsigned int maxCell;
+const unsigned int MAX_CELL_MIN = 0;
+const unsigned int MAX_CELL_MAX = 65535;
+
+unsigned int dcdcVin;
+const unsigned int DCDC_VIN_MIN = 0;
+const unsigned int DCDC_VIN_MAX = 255;
+
+unsigned int dcdcVout;
+const unsigned int DCDC_VOUT_MIN = 0;
+const unsigned int DCDC_VOUT_MAX = 255;
+
+unsigned int dcdcIout;
+const unsigned int DCDC_IOUT_MIN = 0;
+const unsigned int DCDC_IOUT_MAX = 255;
 
 unsigned int state = 0;
 
@@ -212,8 +245,16 @@ void loop()
 
       if (strncmp(data, "101 02", 6) == 0)
       {
-        // parse the reply
         Serial.println("> Proper SOC reply");
+        // parse the reply
+        substring(data, byte1, 22, 23);
+        substring(data, byte2, 25, 26);
+
+        soc = concatBytes(hexToInt(byte1, 2), hexToInt(byte2, 2));
+        soc = constrain(soc, SOC_MIN, SOC_MAX);
+        soc = map(soc, SOC_MIN, SOC_MAX, 0, 255);
+
+        analogWrite(SOC_PIN, soc);
       }
       else Serial.println("> Not proper SOC reply");
 
@@ -265,8 +306,25 @@ void loop()
 
       if (strncmp(data, "103 18", 6) == 0)
       {
-        // parse the reply
         Serial.println("> Proper Min Max reply");
+        // parse the reply
+        substring(data, byte1, 16, 17);
+        substring(data, byte2, 19, 20);
+
+        minCell = concatBytes(hexToInt(byte1, 2), hexToInt(byte2, 2));
+        minCell = constrain(minCell, MIN_CELL_MIN, MIN_CELL_MAX);
+        minCell = map(minCell, MIN_CELL_MIN, MIN_CELL_MAX, 0, 255);
+
+        analogWrite(MIN_CELL_PIN, minCell);
+
+        substring(data, byte1, 22, 23);
+        substring(data, byte2, 25, 26);
+
+        maxCell = concatBytes(hexToInt(byte1, 2), hexToInt(byte2, 2));
+        maxCell = constrain(maxCell, MAX_CELL_MIN, MAX_CELL_MAX);
+        maxCell = map(maxCell, MAX_CELL_MIN, MAX_CELL_MAX, 0, 255);
+
+        analogWrite(MAX_CELL_PIN, maxCell);
       }
       else Serial.println("> Not proper Min Max reply");
 
@@ -318,8 +376,31 @@ void loop()
 
       if (strncmp(data, "0C 50 01 82", 11) == 0)
       {
-        // parse the reply
         Serial.println("> Proper DC/DC reply");
+        // parse the reply
+        substring(data, byte1, 12, 13);
+
+        dcdcVin = hexToInt(byte1,2);
+        dcdcVin = constrain(dcdcVin, DCDC_VIN_MIN, DCDC_VIN_MAX);
+        dcdcVin = map(dcdcVin, DCDC_VIN_MIN, DCDC_VIN_MAX, 0, 255);
+
+        analogWrite(DCDC_VIN_PIN, dcdcVin);
+
+        substring(data, byte1, 15, 16);
+
+        dcdcVout = hexToInt(byte1,2);
+        dcdcVout = constrain(dcdcVout, DCDC_VOUT_MIN, DCDC_VOUT_MAX);
+        dcdcVout = map(dcdcVout, DCDC_VOUT_MIN, DCDC_VOUT_MAX, 0, 255);
+
+        analogWrite(DCDC_VOUT_PIN, dcdcVout);
+
+        substring(data, byte1, 18, 19);
+
+        dcdcIout = hexToInt(byte1,2);
+        dcdcIout = constrain(dcdcIout, DCDC_IOUT_MIN, DCDC_IOUT_MAX);
+        dcdcIout = map(dcdcIout, DCDC_IOUT_MIN, DCDC_IOUT_MAX, 0, 255);
+
+        analogWrite(DCDC_IOUT_PIN, dcdcIout);
       }
       else Serial.println("> Not proper DC/DC reply");
 
@@ -664,6 +745,11 @@ unsigned int hexToInt(char *in, int length)
     }
   }
   return result;
+}
+
+unsigned int concatBytes(unsigned int MSB, unsigned int LSB)
+{
+  return LSB + (MSB*256);
 }
 
 void getBMS()
