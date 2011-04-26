@@ -18,6 +18,10 @@ AT CRA 0C 7F 81 82   -listen to messages at address 0C 7F 81 82
 // wait for at least .1s as this is the frequency of broadcast
 // after message received:
 AT AR                -return to mode that automatically sets receive address
+
+
+
+Arduino Mega analog pins are digital pins 54-69
 */
 
 

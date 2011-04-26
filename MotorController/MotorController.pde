@@ -57,10 +57,10 @@ const int RUN_RPM_DIFFERENCE = 200; // X RPM; allow engine to drop X RPM from th
 const int SUSTAIN_RPM_THRESHOLD = 500; // X RPM; if engine X RPM below desired, kill engine
 
 // Pin assignments
-const int GENERATOR_REQUEST_PIN =  7;
-const int STARTER_PIN =            3;
-const int SERVO_PIN =              9;
-const int FAKE_SERVO =             4; // for testing with motor emulator
+const int GENERATOR_REQUEST_PIN = 18;
+const int STARTER_PIN =           55;
+const int SERVO_PIN =             54;
+const int FAKE_SERVO =             5; // for testing with motor emulator
 const int HALL_EFFECT_INTERRUPT =  4; // interrupt 4 is digital pin 19
 const int CRIO_START_STOP_INTERRUPT = 5; // interrupt 5 is digital pin 18
 
