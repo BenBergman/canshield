@@ -46,6 +46,7 @@ const int RUN_ENGINE_DELAY =       8;
 const int RUN_ENGINE_RPM =         9;
 const int SUSTAIN_ENGINE =        10;
 const int KILL_ENGINE =           11;
+const int KILL_ENGINE_FOREVER =   12;
 
 // State machine thresholds
 const int STARTER_TIMER_THRESHOLD = 5000; // in ms; wait before checking if engine has started
@@ -60,6 +61,8 @@ const int GENERATOR_REQUEST_PIN =  7;
 const int STARTER_PIN =            3;
 const int SERVO_PIN =              9;
 const int FAKE_SERVO =             4; // for testing with motor emulator
+const int HALL_EFFECT_INTERRUPT =  4; // interrupt 4 is digital pin 19
+const int CRIO_START_STOP_INTERRUPT = 5; // interrupt 5 is digital pin 18
 
 /************ End of Constants ************/
 
@@ -90,12 +93,18 @@ unsigned long rpmold;
 unsigned long denom;
 unsigned long numer;
 
+unsigned long rpmTimer;
+const unsigned long rpmTimeout = 300;
+
 unsigned int state;
 int starterAttempts;
 unsigned long starterTimer;
 
 int generatorRequest;
 boolean sustainEngine;
+volatile boolean startRequested = false;
+volatile boolean stopRequested = false;
+volatile boolean killEngine = true;
 
 // values to send to analog outputs
 // BMS
@@ -133,14 +142,19 @@ void setup()
   Serial.begin(115200);
   Serial.flush();
 
-  attachInterrupt(0, rpm_fun, RISING); // 0 means INT0 pin, which is digital 2
+  attachInterrupt(HALL_EFFECT_INTERRUPT, rpm_fun, RISING); 
+  attachInterrupt(CRIO_START_STOP_INTERRUPT, crioStartStop, RISING);
 
   rpmcount = 0;
   rpm = 0;
   rpmold = 0;
   timeold = 0;
 
+  rpmTimer = millis();
+
   sustainEngine = false;
+
+  Serial.println("Start main loop");
 } 
 
 
@@ -150,6 +164,21 @@ void rpm_fun()
 {
   rpmcount++;
 }
+
+void crioStartStop()
+{
+  if (startRequested == false)
+  {
+    startRequested = true;
+  }
+  else
+  {
+    startRequested = false;
+    stopRequested = true;
+  }
+}
+
+
 
 
 
@@ -163,8 +192,13 @@ void loop()
     case START:
       Serial.println("START");
 
-      /*
-      if (engineRunning) state = SUSTAIN_ENGINE;  // ??????? needs to verify engine off (by RPM?)?
+      /**/
+      checkRPM();
+      if (rpm >= 900) 
+      {
+        startRequested = true;
+        state = SUSTAIN_ENGINE;  
+      }
       else /**/ state = ENGINE_NOT_RUNNING;
       break;
     
@@ -182,8 +216,9 @@ void loop()
     case HIGH_SOC:
       Serial.println("HIGH_SOC");
 
-      generatorRequest = digitalRead(GENERATOR_REQUEST_PIN);
-      if (generatorRequest == HIGH) state = ENGINE_REQUESTED;
+      //generatorRequest = digitalRead(GENERATOR_REQUEST_PIN);
+      //if (generatorRequest == HIGH) state = ENGINE_REQUESTED;
+      if (startRequested == true) state = ENGINE_REQUESTED;
       else state = START;
       break;
     
@@ -247,7 +282,8 @@ void loop()
       if (starterAttempts > STARTER_ATTEMPTS_MAX) 
       {
         digitalWrite(STARTER_PIN, LOW);
-        state = START;
+        //state = START;
+        state = KILL_ENGINE_FOREVER; // assumed that if engine wouldn't start, we should abandon trying
       }
       else state = START_ENGINE_DELAY;
       break;
@@ -286,10 +322,19 @@ void loop()
       // send DC/DC ON command
 
       // how we get the kill signal needs to be investigated
-      generatorRequest = digitalRead(GENERATOR_REQUEST_PIN);
-      if (generatorRequest == LOW) 
+      //generatorRequest = digitalRead(GENERATOR_REQUEST_PIN);
+      //if (generatorRequest == LOW) 
+      if (stopRequested == true) 
       {
-        state = KILL_ENGINE;
+        if (soc < SOC_MIN)
+        {
+          // assumed that driver will not want any charging after this point
+          state = KILL_ENGINE_FOREVER;
+        }
+        else
+        {
+          state = KILL_ENGINE;
+        }
         break;
       }
 
@@ -323,9 +368,14 @@ void loop()
       sustainEngine = false;
       // send DC/DC OFF command
       // signal engine kill
+
+      stopRequested == false;
       state = START;
       break;
 
+      
+    case KILL_ENGINE_FOREVER:
+      break;
 
 
     default:
@@ -333,13 +383,13 @@ void loop()
       break;
   }
 
-  delay(15); // waits for the servo to get there   <---- might not be necessary once CAN polling in effect
+  delay(15); // waits for the servo to get there   <---- remove this once integrated with DAQ
 } 
 
 
 void checkRPM()
 {
-  if (rpmcount >= 20)
+  if (rpmcount >= 24)
   {
     // Update RPM every 20 counts, increase this for better RPM resolution,
     // decrease for faster update (adjust rpm calc as needed)
@@ -387,5 +437,11 @@ void checkRPM()
       analogWrite(FAKE_SERVO, ZERO_THROTTLE);
       /**/
     }
+    rpmTimer = millis();
+  }
+  else if (millis() - rpmTimer > rpmTimeout)
+  {
+    // no significant rotations so assuming not spinning
+    rpm = 0;
   }
 }
