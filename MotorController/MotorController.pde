@@ -66,8 +66,8 @@ const int HALL_EFFECT_INTERRUPT =  4; // interrupt 4 is digital pin 19
 const int CRIO_START_STOP_INTERRUPT = 5; // interrupt 5 is digital pin 18
 
 
-const int KILL_SWITCH_DEAD = LOW;
-const int KILL_SWITCH_LIVE = HIGH;
+const int KILL_SWITCH_DEAD = HIGH;
+const int KILL_SWITCH_LIVE = LOW;
 
 /************ End of Constants ************/
 
@@ -256,7 +256,6 @@ void loop()
 
       starterAttempts = 0;
       digitalWrite(STARTER_PIN, HIGH);
-      pinMode(KILL_SWITCH, INPUT); // let the pin float
       digitalWrite(KILL_SWITCH, KILL_SWITCH_LIVE);
       starterTimer = millis();
       state = START_ENGINE_DELAY;
@@ -388,7 +387,6 @@ void loop()
       
       sustainEngine = false;
       // signal engine kill
-      pinMode(KILL_SWITCH, OUTPUT);
       digitalWrite(KILL_SWITCH, KILL_SWITCH_DEAD);
       // send DC/DC OFF command
       turnDCDCOff();
@@ -400,7 +398,6 @@ void loop()
       
     case KILL_ENGINE_FOREVER:
       sustainEngine = false;
-      pinMode(KILL_SWITCH, OUTPUT);
       digitalWrite(KILL_SWITCH, KILL_SWITCH_DEAD);
       turnDCDCOff();
       break;
