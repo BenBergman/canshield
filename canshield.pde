@@ -209,7 +209,6 @@ void loop()
     case DAQ_REQUEST_SOC:
       Serial.println("DAQ_REQUEST_SOC");
 
-      getBMS();
       requestBMSSOC();
 
       DAQtimer = millis();
@@ -270,7 +269,6 @@ void loop()
     case DAQ_REQUEST_MIN_MAX:
       Serial.println("DAQ_REQUEST_MIN_MAX");
 
-      getBMS();
       requestBMSMinMax();
 
       DAQtimer = millis();
@@ -340,7 +338,6 @@ void loop()
     case DAQ_REQUEST_DCDC:
       Serial.println("DAQ_REQUEST_DCDC");
 
-      getDCDC();
       requestDCDCData();
 
       DAQtimer = millis();
@@ -768,6 +765,7 @@ void getBMS()
 
 void requestBMSSOC()
 {
+  getBMS();
   // send CAN request for SOC
   // THIS FUNCTION VERIFIED
   send_command("AT CRA 101\r", temp);
@@ -778,6 +776,7 @@ void requestBMSSOC()
 
 void requestBMSMinMax()
 {
+  getBMS();
   // send CAN request for min and max cell V
   // THIS FUNCTION VERIFIED
   send_command("AT CRA 103\r", temp);
@@ -798,6 +797,7 @@ void getDCDC()
 
 void requestDCDCData()
 {
+  getDCDC();
   // send CAN request for min and max cell V
   send_command("AT CRA 50 01 82\r", temp);
   send_command("AT CP 0C\r", temp);
