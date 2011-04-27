@@ -58,11 +58,16 @@ const int SUSTAIN_RPM_THRESHOLD = 500; // X RPM; if engine X RPM below desired, 
 
 // Pin assignments
 const int GENERATOR_REQUEST_PIN = 18;
+const int KILL_SWITCH =           56;
 const int STARTER_PIN =           55;
 const int SERVO_PIN =             54;
 const int FAKE_SERVO =             5; // for testing with motor emulator
 const int HALL_EFFECT_INTERRUPT =  4; // interrupt 4 is digital pin 19
 const int CRIO_START_STOP_INTERRUPT = 5; // interrupt 5 is digital pin 18
+
+
+const int KILL_SWITCH_DEAD = HIGH;
+const int KILL_SWITCH_LIVE = LOW;
 
 /************ End of Constants ************/
 
@@ -120,11 +125,13 @@ byte dcdcIout;
 void setup() 
 { 
   pinMode(GENERATOR_REQUEST_PIN, INPUT);
+  pinMode(KILL_SWITCH, OUTPUT);
   pinMode(STARTER_PIN, OUTPUT);
   pinMode(SERVO_PIN, OUTPUT);
   pinMode(FAKE_SERVO, OUTPUT);
 
   digitalWrite(STARTER_PIN, LOW);
+  digitalWrite(KILL_SWITCH, KILL_SWITCH_DEAD);
       
   myServo.attach(SERVO_PIN);  // attaches the servo on pin 9 to the servo object 
 
@@ -238,6 +245,7 @@ void loop()
 
       starterAttempts = 0;
       digitalWrite(STARTER_PIN, HIGH);
+      digitalWrite(KILL_SWITCH, KILL_SWITCH_LIVE);
       starterTimer = millis();
       state = START_ENGINE_DELAY;
       break;
@@ -320,6 +328,7 @@ void loop()
 
 
       // send DC/DC ON command
+      turnDCDCOn();
 
       // how we get the kill signal needs to be investigated
       //generatorRequest = digitalRead(GENERATOR_REQUEST_PIN);
@@ -366,8 +375,10 @@ void loop()
       // kill engine
       
       sustainEngine = false;
-      // send DC/DC OFF command
       // signal engine kill
+      digitalWrite(KILL_SWITCH, KILL_SWITCH_DEAD);
+      // send DC/DC OFF command
+      turnDCDCOff();
 
       stopRequested == false;
       state = START;
@@ -375,6 +386,8 @@ void loop()
 
       
     case KILL_ENGINE_FOREVER:
+      digitalWrite(KILL_SWITCH, KILL_SWITCH_DEAD);
+      turnDCDCOff();
       break;
 
 
@@ -444,4 +457,22 @@ void checkRPM()
     // no significant rotations so assuming not spinning
     rpm = 0;
   }
+}
+
+turnDCDCOn()
+{
+  getDCDC();
+  send_command("AT CP 0C\r", temp);
+  send_command("AT SH 5F 82 81\r", temp);
+  Serial2.flush();
+  send_command("FF 20\r", temp); // second byte is power setpoint (in deciwatts)
+}
+
+turnDCDCOff()
+{
+  getDCDC();
+  send_command("AT CP 0C\r", temp);
+  send_command("AT SH 5F 82 81\r", temp);
+  Serial2.flush();
+  send_command("00 00\r", temp); // second byte is power setpoint (in deciwatts)
 }
