@@ -256,6 +256,7 @@ void loop()
 
       starterAttempts = 0;
       digitalWrite(STARTER_PIN, HIGH);
+      pinMode(KILL_SWITCH, INPUT); // let the pin float
       digitalWrite(KILL_SWITCH, KILL_SWITCH_LIVE);
       starterTimer = millis();
       state = START_ENGINE_DELAY;
@@ -387,6 +388,7 @@ void loop()
       
       sustainEngine = false;
       // signal engine kill
+      pinMode(KILL_SWITCH, OUTPUT);
       digitalWrite(KILL_SWITCH, KILL_SWITCH_DEAD);
       // send DC/DC OFF command
       turnDCDCOff();
@@ -398,6 +400,7 @@ void loop()
       
     case KILL_ENGINE_FOREVER:
       sustainEngine = false;
+      pinMode(KILL_SWITCH, OUTPUT);
       digitalWrite(KILL_SWITCH, KILL_SWITCH_DEAD);
       turnDCDCOff();
       break;
