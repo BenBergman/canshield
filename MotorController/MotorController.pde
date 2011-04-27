@@ -143,7 +143,8 @@ void setup()
 
   
   // limit the Output range to that which the servo can achieve
-  myPID.SetOutputLimits(ZERO_THROTTLE, MAX_THROTTLE);
+  //myPID.SetOutputLimits(ZERO_THROTTLE, MAX_THROTTLE);
+  myPID.SetOutputLimits(0, 179);
   myPID.SetMode(AUTOMATIC);
   
   Serial.begin(115200);
