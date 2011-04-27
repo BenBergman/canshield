@@ -66,8 +66,8 @@ const int HALL_EFFECT_INTERRUPT =  4; // interrupt 4 is digital pin 19
 const int CRIO_START_STOP_INTERRUPT = 5; // interrupt 5 is digital pin 18
 
 
-const int KILL_SWITCH_DEAD = HIGH;
-const int KILL_SWITCH_LIVE = LOW;
+const int KILL_SWITCH_DEAD = LOW;
+const int KILL_SWITCH_LIVE = HIGH;
 
 /************ End of Constants ************/
 
