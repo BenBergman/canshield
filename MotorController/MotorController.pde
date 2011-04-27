@@ -73,6 +73,16 @@ const int KILL_SWITCH_LIVE = LOW;
 
 
 
+
+#define SIZE 100
+
+char temp[SIZE]; // temp data is NEVER considered valid; just used to appease methods
+
+
+
+
+
+
 int pwm;
  
 Servo myServo;  // create servo object to control a servo 
@@ -461,7 +471,7 @@ void checkRPM()
   }
 }
 
-turnDCDCOn()
+void turnDCDCOn()
 {
   getDCDC();
   send_command("AT CP 0C\r", temp);
@@ -470,7 +480,7 @@ turnDCDCOn()
   send_command("FF 20\r", temp); // second byte is power setpoint (in deciwatts)
 }
 
-turnDCDCOff()
+void turnDCDCOff()
 {
   getDCDC();
   send_command("AT CP 0C\r", temp);
@@ -478,3 +488,32 @@ turnDCDCOff()
   Serial2.flush();
   send_command("00 00\r", temp); // second byte is power setpoint (in deciwatts)
 }
+
+
+
+
+
+
+
+
+
+
+//sends a CAN command
+int send_command(char *cmd, char *result)
+{
+  //Serial2.flush(); 
+  Serial2.print(cmd);
+  delay(15);
+  return 1;//read_data(result);
+}
+
+void getDCDC()
+{
+  // prepare elm to use long CAN addresses
+  send_command("AT PP 2C SV 40\r", temp);
+  send_command("AT PP 2C ON\r", temp);
+  send_command("AT WS\r", temp);
+  Serial2.flush();
+  delay(60); // takes some time to reset ELM but this might not be needed once motor control integrated
+}
+
