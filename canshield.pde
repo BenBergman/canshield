@@ -71,27 +71,27 @@ char byte2[2];
 
 unsigned int soc;
 const unsigned int SOC_MIN = 0;
-const unsigned int SOC_MAX = 65535;
+const unsigned int SOC_MAX = 1000; // 0.1% steps, scale to 100% max
 
 unsigned int minCell;
 const unsigned int MIN_CELL_MIN = 0;
-const unsigned int MIN_CELL_MAX = 65535;
+const unsigned int MIN_CELL_MAX = 5000; // 1mV steps, scale to 5V max
 
 unsigned int maxCell;
 const unsigned int MAX_CELL_MIN = 0;
-const unsigned int MAX_CELL_MAX = 65535;
+const unsigned int MAX_CELL_MAX = 5000; // 1mV steps, scale to 5V max
 
 unsigned int dcdcVin;
 const unsigned int DCDC_VIN_MIN = 0;
-const unsigned int DCDC_VIN_MAX = 255;
+const unsigned int DCDC_VIN_MAX = 200; // 350mV steps, scale to 70V max
 
 unsigned int dcdcVout;
 const unsigned int DCDC_VOUT_MIN = 0;
-const unsigned int DCDC_VOUT_MAX = 255;
+const unsigned int DCDC_VOUT_MAX = 255; // 350mV steps, scale to 90V max (90V --> 257, so 255 used)
 
 unsigned int dcdcIout;
 const unsigned int DCDC_IOUT_MIN = 0;
-const unsigned int DCDC_IOUT_MAX = 255;
+const unsigned int DCDC_IOUT_MAX = 120; // 1A steps, scale to 120A max
 
 unsigned int state = 0;
 
