@@ -387,6 +387,7 @@ void loop()
 
       
     case KILL_ENGINE_FOREVER:
+      sustainEngine = false;
       digitalWrite(KILL_SWITCH, KILL_SWITCH_DEAD);
       turnDCDCOff();
       break;
