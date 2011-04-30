@@ -47,7 +47,8 @@ const int RUN_ENGINE_DELAY =       8;
 const int RUN_ENGINE_RPM =         9;
 const int SUSTAIN_ENGINE =        10;
 const int KILL_ENGINE =           11;
-const int KILL_ENGINE_FOREVER =   12;
+const int KILL_ENGINE_WAIT =      12;
+const int KILL_ENGINE_FOREVER =   13;
 
 // State machine thresholds
 const int STARTER_TIMER_THRESHOLD = 5000; // in ms; wait before checking if engine has started
@@ -56,6 +57,7 @@ const int STARTER_ATTEMPTS_MAX = 5;
 const int STARTER_TIMER_RUN_THRESHOLD = 2000; // in ms; wait before assuming engine started
 const int RUN_RPM_DIFFERENCE = 200; // X RPM; allow engine to drop X RPM from threshold
 const int SUSTAIN_RPM_THRESHOLD = 500; // X RPM; if engine X RPM below desired, kill engine
+const long KILL_ENGINE_TIMER = 5000; // X ms; keep the kill switch engaged this long
 
 // Pin assignments
 const int GENERATOR_REQUEST_PIN = 18;
@@ -126,6 +128,8 @@ boolean sustainEngine;
 volatile boolean startRequested = false;
 volatile boolean stopRequested = false;
 volatile boolean killEngine = true;
+
+unsigned long killEngineTimer = 0;
 
 // values to send to analog outputs
 // BMS
@@ -405,9 +409,34 @@ void loop()
       // send DC/DC OFF command
       turnDCDCOff();
 
-      stopRequested == false;
-      state = START;
+      if (soc < SOC_MIN)
+      {
+        state = KILL_ENGINE_FOREVER;
+        break;
+      }
+
+      
+      killEngineTimer = millis();
+      state = KILL_ENGINE_WAIT;
       break;
+
+
+      
+    case KILL_ENGINE_WAIT:
+      Serial.println("KILL_ENGINE_WAIT");
+
+      // stops after timout AND stopped engine (assume engine dead if rpm below 30
+      if (millis() - killEngineTimer > KILL_ENGINE_TIMER && rpm <= 30)
+      {
+        if (soc < SOC_MIN) state = KILL_ENGINE_FOREVER;
+        else 
+        {
+          stopRequested == false;
+          state = START;
+        }
+      }
+      break;
+
 
       
     case KILL_ENGINE_FOREVER:
@@ -415,6 +444,7 @@ void loop()
       digitalWrite(KILL_SWITCH, KILL_SWITCH_DEAD);
       turnDCDCOff();
       break;
+
 
 
     default:
