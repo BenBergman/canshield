@@ -73,6 +73,9 @@ const int START_BUTTON =          57;
 const int KILL_SWITCH_DEAD = HIGH;
 const int KILL_SWITCH_LIVE = LOW;
 
+const int STARTER_DEAD = HIGH;
+const int STARTER_LIVE = LOW;
+
 const int DEBOUNCE_TIME = 5; // ms
 
 /************ End of Constants ************/
@@ -151,7 +154,7 @@ void setup()
   pinMode(FAKE_SERVO, OUTPUT);
   pinMode(START_BUTTON, INPUT);
 
-  digitalWrite(STARTER_PIN, LOW);
+  digitalWrite(STARTER_PIN, STARTER_DEAD);
   digitalWrite(KILL_SWITCH, KILL_SWITCH_DEAD);
       
   myServo.attach(SERVO_PIN);  // attaches the servo on pin 9 to the servo object 
@@ -278,7 +281,7 @@ void loop()
 
       starterAttempts = 0;
       digitalWrite(KILL_SWITCH, KILL_SWITCH_LIVE);
-      digitalWrite(STARTER_PIN, HIGH);
+      digitalWrite(STARTER_PIN, STARTER_LIVE);
       starterTimer = millis();
       state = START_ENGINE_DELAY;
       break;
@@ -301,7 +304,7 @@ void loop()
       checkRPM();
       if (rpm > STARTER_RPM_THRESHOLD) 
       {
-        digitalWrite(STARTER_PIN, LOW);
+        digitalWrite(STARTER_PIN, STARTER_DEAD);
         starterTimer = millis();
         state = RUN_ENGINE_DELAY;
       }
@@ -322,7 +325,7 @@ void loop()
       starterAttempts ++;
       if (starterAttempts > STARTER_ATTEMPTS_MAX) 
       {
-        digitalWrite(STARTER_PIN, LOW);
+        digitalWrite(STARTER_PIN, STARTER_DEAD);
         //state = START;
         state = KILL_ENGINE_FOREVER; // assumed that if engine wouldn't start, we should abandon trying
       }
@@ -410,6 +413,7 @@ void loop()
       sustainEngine = false;
       // signal engine kill
       digitalWrite(KILL_SWITCH, KILL_SWITCH_DEAD);
+      digitalWrite(STARTER_PIN, STARTER_DEAD);
       // send DC/DC OFF command
       turnDCDCOff();
 
@@ -446,6 +450,7 @@ void loop()
     case KILL_ENGINE_FOREVER:
       sustainEngine = false;
       digitalWrite(KILL_SWITCH, KILL_SWITCH_DEAD);
+      digitalWrite(STARTER_PIN, STARTER_DEAD);
       turnDCDCOff();
       break;
 
