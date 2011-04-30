@@ -11,6 +11,7 @@
 
 #include <Servo.h> 
 #include <PID_v1.h>
+#include <Bounce.h>
 
 
 /**************** Constants ****************/
@@ -64,10 +65,13 @@ const int SERVO_PIN =             54;
 const int FAKE_SERVO =             5; // for testing with motor emulator
 const int HALL_EFFECT_INTERRUPT =  4; // interrupt 4 is digital pin 19
 const int CRIO_START_STOP_INTERRUPT = 5; // interrupt 5 is digital pin 18
+const int START_BUTTON =          57;
 
 
 const int KILL_SWITCH_DEAD = HIGH;
 const int KILL_SWITCH_LIVE = LOW;
+
+const int DEBOUNCE_TIME = 5; // ms
 
 /************ End of Constants ************/
 
@@ -84,6 +88,8 @@ char temp[SIZE]; // temp data is NEVER considered valid; just used to appease me
 
 
 int pwm;
+
+Bounce startButton = Bounce(START_BUTTON, DEBOUNCE_TIME);
  
 Servo myServo;  // create servo object to control a servo 
 
@@ -139,6 +145,7 @@ void setup()
   pinMode(STARTER_PIN, OUTPUT);
   pinMode(SERVO_PIN, OUTPUT);
   pinMode(FAKE_SERVO, OUTPUT);
+  pinMode(START_BUTTON, INPUT);
 
   digitalWrite(STARTER_PIN, LOW);
   digitalWrite(KILL_SWITCH, KILL_SWITCH_DEAD);
@@ -203,6 +210,13 @@ void crioStartStop()
  
 void loop() 
 { 
+  startButton.update();
+  if (startButton.risingEdge()) // assumes unpressed in LOW
+  {
+    crioStartStop();
+  }
+  
+
   switch (state)
   {
 
