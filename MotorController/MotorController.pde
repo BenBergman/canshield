@@ -194,14 +194,18 @@ void rpm_fun()
   rpmcount++;
 }
 
+
+
+
 void crioStartStop()
 {
-  if (startRequested == false)
+  if (startRequested == false && stopRequested == false)
   {
     startRequested = true;
   }
   else
   {
+    if (stopRequested == false) state = KILL_ENGINE;
     startRequested = false;
     stopRequested = true;
   }
