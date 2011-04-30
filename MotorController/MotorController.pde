@@ -428,6 +428,7 @@ void loop()
       // signal engine kill
       digitalWrite(KILL_SWITCH, KILL_SWITCH_DEAD);
       digitalWrite(STARTER_PIN, STARTER_DEAD);
+      myServo.write(ZERO_THROTTLE);
       // send DC/DC OFF command
       turnDCDCOff();
 
@@ -462,9 +463,10 @@ void loop()
 
       
     case KILL_ENGINE_FOREVER:
-      sustainEngine = false;
       digitalWrite(KILL_SWITCH, KILL_SWITCH_DEAD);
       digitalWrite(STARTER_PIN, STARTER_DEAD);
+      myServo.write(ZERO_THROTTLE);
+      sustainEngine = false;
       turnDCDCOff();
       break;
 
