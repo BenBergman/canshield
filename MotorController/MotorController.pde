@@ -100,7 +100,7 @@ double Setpoint;  // This is the desired RPM of the engine
 double Input;     // This is the current RPM of the engine
 double Output;    // This is the value sent to the servo
 
-PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, PID_DIRECTION);  // create PID for engine RPM control; last three inputs are P, I, and D parameters.
+PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, PID_DIRECTION);  // create PID for engine RPM control; K inputs are P, I, and D parameters.
  
 int potpin = 2;  // analog pin used to connect the potentiometer
 int val;    // variable to read the value from the analog pin 
@@ -277,8 +277,8 @@ void loop()
       Serial.println("START_ENGINE");
 
       starterAttempts = 0;
-      digitalWrite(STARTER_PIN, HIGH);
       digitalWrite(KILL_SWITCH, KILL_SWITCH_LIVE);
+      digitalWrite(STARTER_PIN, HIGH);
       starterTimer = millis();
       state = START_ENGINE_DELAY;
       break;
