@@ -29,6 +29,8 @@ const int TARGET_RPM = 5000;
 // Throttle positions
 const int ZERO_THROTTLE = 179;
 const int MAX_THROTTLE = 0;
+const int STARTER_THROTTLE = 110;
+const int STARTER_THROTTLE_INCREMENT = -12; // when starting the engine, slowly ramp the throttle up by this amount each cycle
 const int PID_DIRECTION = REVERSE; // if the zero point is 179, this must be REVERSE, but if 0, use DIRECT
 
 const byte SOC_MIN = 85;   // if SOC below 85%, start the engine
@@ -125,6 +127,7 @@ const unsigned long rpmTimeout = 300;
 unsigned int state;
 int starterAttempts;
 unsigned long starterTimer;
+int starterThrottlePosition;
 
 int generatorRequest;
 boolean sustainEngine;
@@ -283,6 +286,7 @@ void loop()
       digitalWrite(KILL_SWITCH, KILL_SWITCH_LIVE);
       digitalWrite(STARTER_PIN, STARTER_LIVE);
       starterTimer = millis();
+      starterThrottlePosition = ZERO_THROTTLE;
       state = START_ENGINE_DELAY;
       break;
     
@@ -292,6 +296,12 @@ void loop()
       Serial.println("START_ENGINE_DELAY");
 
       // Make sure any state that points here first starts the timer!
+      // Also set starterThrottlePosition to ZERO_THROTTLE
+      starterThrottlePosition += STARTER_THROTTLE_INCREMENT;
+      starterThrottlePosition = constrain(starterThrottlePosition, 
+                                          min(ZERO_THROTTLE, STARTER_THROTTLE), 
+                                          max(ZERO_THROTTLE, STARTER_THROTTLE) );
+      myServo.write(starterThrottlePosition);
       if (millis() - starterTimer > STARTER_TIMER_THRESHOLD) state = START_ENGINE_RPM;
       break;
       
@@ -329,7 +339,11 @@ void loop()
         //state = START;
         state = KILL_ENGINE_FOREVER; // assumed that if engine wouldn't start, we should abandon trying
       }
-      else state = START_ENGINE_DELAY;
+      else 
+      {
+        starterThrottlePosition = ZERO_THROTTLE;
+        state = START_ENGINE_DELAY;
+      }
       break;
 
 
